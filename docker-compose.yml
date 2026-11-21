@@ -1,0 +1,18 @@
+services:
+  classr:
+    build: .
+    image: classr
+    container_name: classr
+    ports:
+      - "7860:7860"
+    environment:
+      # URL pública que se muestra a los estudiantes para usar en n8n.
+      # Déjala vacía para deducirla de la petición (o de los headers X-Forwarded-* del proxy).
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      MAX_ROWS: ${MAX_ROWS:-200000}
+    volumes:
+      - classr-models:/data/models
+    restart: unless-stopped
+
+volumes:
+  classr-models:
