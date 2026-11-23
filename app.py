@@ -21,6 +21,7 @@ import os
 import re
 import secrets
 import threading
+from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -58,8 +59,27 @@ FEATURES = {
     "Caracteres (2-5 gramas)": "char",
 }
 
-_cache: dict[str, Pipeline] = {}
+# Caché LRU de modelos en memoria: guarda los CACHE_SIZE usados más recientemente;
+# el resto se vuelve a leer desde disco cuando se piden.
+CACHE_SIZE = max(1, int(os.environ.get("CACHE_SIZE", 32)))
+_cache: OrderedDict[str, Pipeline] = OrderedDict()
 _cache_lock = threading.Lock()
+
+
+def _cache_put(model_id: str, pipe: Pipeline) -> None:
+    with _cache_lock:
+        _cache[model_id] = pipe
+        _cache.move_to_end(model_id)
+        while len(_cache) > CACHE_SIZE:
+            _cache.popitem(last=False)  # descarta el menos usado recientemente
+
+
+def _cache_get(model_id: str) -> Pipeline | None:
+    with _cache_lock:
+        pipe = _cache.get(model_id)
+        if pipe is not None:
+            _cache.move_to_end(model_id)
+        return pipe
 
 
 # --------------------------------------------------------------------------- #
@@ -73,22 +93,20 @@ def save_model(model_id: str, pipe: Pipeline, meta: dict) -> None:
     model_path, meta_path = _paths(model_id)
     joblib.dump(pipe, model_path)
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
-    with _cache_lock:
-        _cache[model_id] = pipe
+    _cache_put(model_id, pipe)
 
 
 def load_model(model_id: str) -> Pipeline:
     if not MODEL_ID_RE.match(model_id or ""):
         raise KeyError(model_id)
-    with _cache_lock:
-        if model_id in _cache:
-            return _cache[model_id]
+    pipe = _cache_get(model_id)
+    if pipe is not None:
+        return pipe
     model_path, _ = _paths(model_id)
     if not model_path.exists():
         raise KeyError(model_id)
     pipe = joblib.load(model_path)
-    with _cache_lock:
-        _cache[model_id] = pipe
+    _cache_put(model_id, pipe)
     return pipe
 
 

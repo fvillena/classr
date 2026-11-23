@@ -10,6 +10,7 @@ services:
       # Déjala vacía para deducirla de la petición (o de los headers X-Forwarded-* del proxy).
       PUBLIC_URL: ${PUBLIC_URL:-}
       MAX_ROWS: ${MAX_ROWS:-200000}
+      CACHE_SIZE: ${CACHE_SIZE:-32}
     volumes:
       - classr-models:/data/models
     restart: unless-stopped

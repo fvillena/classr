@@ -19,7 +19,7 @@ python -m venv .venv
 
 Abre <http://localhost:7860>. Hay un dataset de prueba en `ejemplos/sentimiento.csv`.
 
-Variables de entorno: `PORT` (7860), `HOST` (0.0.0.0), `MODELS_DIR` (./models), `MAX_ROWS` (200000) y `PUBLIC_URL` (URL pública que se muestra a los estudiantes; si no se define se deduce de la petición, incluidos los headers `X-Forwarded-*` de un proxy).
+Variables de entorno: `PORT` (7860), `HOST` (0.0.0.0), `MODELS_DIR` (./models), `MAX_ROWS` (200000), `CACHE_SIZE` (32: cuántos modelos se mantienen cargados en memoria; los demás se leen desde disco al pedirlos y se descarta el usado hace más tiempo) y `PUBLIC_URL` (URL pública que se muestra a los estudiantes; si no se define se deduce de la petición, incluidos los headers `X-Forwarded-*` de un proxy).
 
 ## API
 
